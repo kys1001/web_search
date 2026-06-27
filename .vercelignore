@@ -1,0 +1,7 @@
+.agents
+.git
+.server-port
+.env
+.env.*
+node_modules
+server*.log

@@ -640,4 +640,18 @@ function listenWithFallback(port, attempt = 0) {
   });
 }
 
-listenWithFallback(Number.isFinite(DEFAULT_PORT) ? DEFAULT_PORT : 5173);
+if (require.main === module) {
+  listenWithFallback(Number.isFinite(DEFAULT_PORT) ? DEFAULT_PORT : 5173);
+}
+
+module.exports = {
+  DEFAULT_MODEL,
+  MATERIAL_TYPES,
+  buildOpenAiPayload,
+  callOpenAi,
+  handleApiConfig,
+  handleApiSearch,
+  json,
+  normalizeOpenAiResponse,
+  readJsonBody
+};

@@ -1,5 +1,7 @@
 .server-port
 server*.log
+.agents/
 node_modules/
 .env
+.vercel/
 .DS_Store
