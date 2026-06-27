@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>OpenAI Web Research Desk</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <header class="app-header">
+      <div>
+        <p class="eyebrow">OpenAI Web Search API</p>
+        <h1>Web Research Desk</h1>
+      </div>
+      <div id="apiStatus" class="status-pill">API 확인 중</div>
+    </header>
+
+    <main class="workspace">
+      <section class="control-panel" aria-labelledby="searchTitle">
+        <form id="searchForm">
+          <div class="field-block">
+            <label for="keyword" id="searchTitle">키워드</label>
+            <textarea id="keyword" name="keyword" rows="3" placeholder="예: 온디바이스 AI 협력학습, K-배터리 수출 규제"></textarea>
+          </div>
+
+          <div class="field-grid two">
+            <label class="field-block">
+              API 키
+              <input id="apiKey" name="apiKey" type="password" autocomplete="off" placeholder="sk-...">
+            </label>
+            <label class="check-row api-save-row">
+              <input type="checkbox" id="rememberApiKey">
+              <span>
+                세션 저장
+                <small>현재 브라우저 세션에만 유지</small>
+              </span>
+            </label>
+          </div>
+
+          <div class="field-grid two">
+            <label class="field-block">
+              모델
+              <input id="model" name="model" autocomplete="off">
+            </label>
+            <label class="field-block">
+              최신 범위
+              <select id="recency" name="recency">
+                <option value="최근 24시간 우선">최근 24시간</option>
+                <option value="최근 7일 우선">최근 7일</option>
+                <option value="최근 30일 우선, 단 핵심 맥락은 더 오래된 자료도 허용" selected>최근 30일</option>
+                <option value="최근 1년 우선, 시간순 변화와 장기 맥락 포함">최근 1년</option>
+                <option value="가장 최신 자료 우선, 필요한 경우 배경 자료 포함">직접 판단</option>
+              </select>
+            </label>
+          </div>
+
+          <fieldset>
+            <legend>자료 유형</legend>
+            <div id="materialTypes" class="checkbox-grid"></div>
+          </fieldset>
+
+          <fieldset>
+            <legend>웹서치 API 옵션</legend>
+            <div class="option-list">
+              <label class="check-row">
+                <input type="checkbox" id="externalWebAccess" checked>
+                <span>라이브 웹 접근</span>
+              </label>
+              <label class="check-row">
+                <input type="checkbox" id="includeImages">
+                <span>이미지 결과 포함</span>
+              </label>
+              <label class="check-row">
+                <input type="checkbox" id="returnUnlimited">
+                <span>긴 리서치 토큰 예산</span>
+              </label>
+              <label class="check-row">
+                <input type="checkbox" id="useLocation">
+                <span>지역 정보 사용</span>
+              </label>
+            </div>
+          </fieldset>
+
+          <div class="field-grid three compact">
+            <label class="field-block">
+              검색 깊이
+              <select id="contextSize">
+                <option value="low">낮음</option>
+                <option value="medium" selected>보통</option>
+                <option value="high">높음</option>
+              </select>
+            </label>
+            <label class="field-block">
+              추론
+              <select id="reasoningEffort">
+                <option value="">기본</option>
+                <option value="low" selected>낮음</option>
+                <option value="medium">보통</option>
+                <option value="high">높음</option>
+                <option value="xhigh">최고</option>
+              </select>
+            </label>
+            <label class="field-block">
+              이미지 수
+              <input id="maxImageResults" type="number" min="1" max="10" value="4">
+            </label>
+          </div>
+
+          <div class="field-grid two">
+            <label class="field-block">
+              허용 도메인
+              <textarea id="allowedDomains" rows="2" placeholder="예: reuters.com, who.int"></textarea>
+            </label>
+            <label class="field-block">
+              차단 도메인
+              <textarea id="blockedDomains" rows="2" placeholder="예: wikipedia.org, reddit.com"></textarea>
+            </label>
+          </div>
+
+          <div class="field-grid four compact location-fields">
+            <label class="field-block">
+              국가
+              <input id="country" maxlength="2" placeholder="KR">
+            </label>
+            <label class="field-block">
+              도시
+              <input id="city" placeholder="Seoul">
+            </label>
+            <label class="field-block">
+              지역
+              <input id="region" placeholder="Seoul">
+            </label>
+            <label class="field-block">
+              시간대
+              <input id="timezone" placeholder="Asia/Seoul">
+            </label>
+          </div>
+
+          <label class="field-block">
+            메모
+            <textarea id="memo" rows="3" placeholder="관심 관점, 제외할 범위, 비교 기준"></textarea>
+          </label>
+
+          <div class="action-row">
+            <button type="submit" class="primary-action">자료 긁어오기</button>
+            <button type="button" id="resetButton" class="secondary-action">초기화</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="result-panel" aria-live="polite">
+        <div class="result-toolbar">
+          <div>
+            <p class="eyebrow">정리 결과</p>
+            <h2 id="resultTitle">대기 중</h2>
+          </div>
+          <div class="toolbar-actions">
+            <button type="button" id="copyMarkdown" disabled>Markdown</button>
+            <button type="button" id="downloadJson" disabled>JSON</button>
+          </div>
+        </div>
+
+        <div id="notice" class="notice">키워드와 자료 유형을 고르면 결과가 이곳에 정리됩니다.</div>
+
+        <nav class="tabs" aria-label="결과 보기">
+          <button type="button" class="tab active" data-tab="summary">요약</button>
+          <button type="button" class="tab" data-tab="materials">자료</button>
+          <button type="button" class="tab" data-tab="timeline">타임라인</button>
+          <button type="button" class="tab" data-tab="sources">소스</button>
+          <button type="button" class="tab" data-tab="raw">JSON</button>
+        </nav>
+
+        <div id="summaryTab" class="tab-panel active"></div>
+        <div id="materialsTab" class="tab-panel"></div>
+        <div id="timelineTab" class="tab-panel"></div>
+        <div id="sourcesTab" class="tab-panel"></div>
+        <div id="rawTab" class="tab-panel"></div>
+      </section>
+    </main>
+
+    <script src="/app.js" defer></script>
+  </body>
+</html>

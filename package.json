@@ -1,0 +1,13 @@
+{
+  "name": "openai-web-research-desk",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Keyword-based latest-source research organizer powered by OpenAI Responses API web_search.",
+  "scripts": {
+    "start": "node server.js",
+    "check": "node --check server.js && node --check public/app.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
