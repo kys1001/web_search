@@ -6,7 +6,7 @@
 
 ```powershell
 $env:OPENAI_API_KEY="sk-..."
-npm start
+npm.cmd run dev
 ```
 
 브라우저에서 서버 로그에 표시된 `http://127.0.0.1:포트` 주소를 여세요. 기본 모델은 `gpt-5.5`이고, 필요하면 `OPENAI_MODEL` 환경변수나 화면의 모델 입력값으로 바꿀 수 있습니다.

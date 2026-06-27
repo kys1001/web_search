@@ -1,6 +1,6 @@
 "use strict";
 
-const { DEFAULT_MODEL, MATERIAL_TYPES, json } = require("../server");
+const { DEFAULT_MODEL, MATERIAL_TYPES, json } = require("../lib/research");
 
 module.exports = async function handler(req, res) {
   if (req.method !== "GET") {

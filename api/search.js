@@ -6,7 +6,7 @@ const {
   json,
   normalizeOpenAiResponse,
   readJsonBody
-} = require("../server");
+} = require("../lib/research");
 
 async function getBody(req) {
   if (req.body && typeof req.body === "object") return req.body;

@@ -1,8 +1,38 @@
 {
   "version": 2,
-  "functions": {
-    "api/search.js": {
-      "maxDuration": 60
+  "builds": [
+    {
+      "src": "public/**",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "api/config.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "api/search.js",
+      "use": "@vercel/node",
+      "config": {
+        "maxDuration": 60
+      }
     }
-  }
+  ],
+  "routes": [
+    {
+      "src": "/api/config",
+      "dest": "/api/config.js"
+    },
+    {
+      "src": "/api/search",
+      "dest": "/api/search.js"
+    },
+    {
+      "src": "/(.+\\.(?:css|js|png|jpg|jpeg|webp|svg|ico|json))",
+      "dest": "/public/$1"
+    },
+    {
+      "src": "/.*",
+      "dest": "/public/index.html"
+    }
+  ]
 }

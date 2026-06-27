@@ -4,8 +4,8 @@
   "private": true,
   "description": "Keyword-based latest-source research organizer powered by OpenAI Responses API web_search.",
   "scripts": {
-    "start": "node server.js",
-    "check": "node --check server.js && node --check public/app.js"
+    "dev": "node lib/research.js",
+    "check": "node --check lib/research.js && node --check public/app.js && node --check api/config.js && node --check api/search.js"
   },
   "engines": {
     "node": ">=20"
