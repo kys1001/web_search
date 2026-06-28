@@ -165,6 +165,29 @@ legend {
   line-height: 1.45;
 }
 
+.keyword-examples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.keyword-chip {
+  border: 1px solid rgba(15, 118, 110, 0.24);
+  border-radius: 7px;
+  background: #ecfdf5;
+  color: var(--teal-dark);
+  padding: 7px 9px;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+  text-align: left;
+}
+
+.keyword-chip:hover {
+  border-color: var(--teal);
+  background: #dff8ef;
+}
+
 fieldset {
   margin: 0;
   padding: 0;

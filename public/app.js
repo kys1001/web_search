@@ -2,6 +2,14 @@
 
 const API_KEY_STORAGE_KEY = "openai_web_research_api_key";
 
+const KEYWORD_EXAMPLES = [
+  "생성형 AI 에이전트 시장 및 기업 도입 최신 동향",
+  "온디바이스 AI 반도체와 AI PC 최신 동향",
+  "전고체 배터리 상용화와 공급망 최신 동향",
+  "그린수소 CCUS 재생에너지 투자 및 정책 최신 동향",
+  "K-콘텐츠 글로벌 OTT와 AI 제작 기술 최신 동향"
+];
+
 const state = {
   config: null,
   result: null,
@@ -12,6 +20,7 @@ const els = {
   apiStatus: document.querySelector("#apiStatus"),
   form: document.querySelector("#searchForm"),
   keyword: document.querySelector("#keyword"),
+  keywordExamples: document.querySelector("#keywordExamples"),
   apiKey: document.querySelector("#apiKey"),
   rememberApiKey: document.querySelector("#rememberApiKey"),
   apiType: document.querySelector("#apiType"),
@@ -89,6 +98,16 @@ function renderMaterialTypes() {
         </label>
       `;
     })
+    .join("");
+}
+
+function renderKeywordExamples() {
+  els.keywordExamples.innerHTML = KEYWORD_EXAMPLES
+    .map((keyword) => `
+      <button type="button" class="keyword-chip" data-keyword="${escapeHtml(keyword)}">
+        ${escapeHtml(keyword)}
+      </button>
+    `)
     .join("");
 }
 
@@ -659,6 +678,12 @@ function resetForm() {
 
 function bindEvents() {
   els.form.addEventListener("submit", runSearch);
+  els.keywordExamples.addEventListener("click", (event) => {
+    const chip = event.target.closest("[data-keyword]");
+    if (!chip) return;
+    els.keyword.value = chip.dataset.keyword;
+    els.keyword.focus();
+  });
   els.apiKey.addEventListener("input", () => {
     persistApiKeyPreference();
     updateApiStatus();
@@ -674,6 +699,7 @@ function bindEvents() {
 
 async function init() {
   bindEvents();
+  renderKeywordExamples();
   renderEmpty();
   try {
     await loadConfig();
