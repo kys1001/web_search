@@ -213,7 +213,7 @@ function renderResult() {
   renderSummary(data, result);
   renderMaterials(data, result);
   renderTimeline(data);
-  renderSources(result);
+  renderSources(data, result);
   renderRaw(result);
 }
 
@@ -323,7 +323,7 @@ function renderTimeline(data) {
   els.panels.timeline.innerHTML = `<ul class="timeline-list">${timeline || `<li>타임라인 자료가 없습니다.</li>`}</ul>`;
 }
 
-function renderSources(result) {
+function renderSources(data, result) {
   const actions = (result.searchActions || [])
     .map((action) => {
       const query = action.query || (Array.isArray(action.queries) ? action.queries.join(", ") : "");
@@ -340,6 +340,37 @@ function renderSources(result) {
     `)
     .join("");
 
+  const sourceDossiers = (data?.sourceDossiers || [])
+    .map((source) => `
+      <article class="material-item">
+        <h3>${escapeHtml(source.referenceId)} ${linkHtml(source.url, source.title)}</h3>
+        <div class="meta-line">
+          <span class="tag">${escapeHtml(source.sourceType)}</span>
+          <span>${escapeHtml(source.authors || "authors unknown")}</span>
+          <span>${escapeHtml(source.publisher)}</span>
+          <span>${escapeHtml(source.publishedAt)}</span>
+        </div>
+        <p><strong>원문 발췌:</strong> ${escapeHtml(source.originalExcerpt || "검색 결과에서 직접 인용 가능한 짧은 원문 발췌가 없습니다.")}</p>
+        <p><strong>출처별 정리:</strong> ${escapeHtml(source.sourceSummary)}</p>
+        <ul class="bullet-list">
+          ${(source.evidenceNotes || []).map((note) => `<li>${escapeHtml(note)}</li>`).join("")}
+        </ul>
+        <p><strong>활용 지점:</strong> ${(source.usedFor || []).map((item) => escapeHtml(item)).join(", ") || "표시 없음"}</p>
+        <p><strong>접근/제한:</strong> ${escapeHtml(source.accessNote)}</p>
+      </article>
+    `)
+    .join("");
+
+  const references = (data?.references || [])
+    .map((reference) => `
+      <li>
+        <strong>${escapeHtml(reference.referenceId)}</strong>
+        ${escapeHtml(reference.citation)}
+        <div class="source-meta">${linkHtml(reference.url, reference.url)}</div>
+      </li>
+    `)
+    .join("");
+
   els.panels.sources.innerHTML = `
     <section class="result-section">
       <h3>검색 액션</h3>
@@ -348,6 +379,14 @@ function renderSources(result) {
     <section class="result-section">
       <h3>URL 소스</h3>
       <ul class="source-list">${sources || "<li>표시할 URL이 없습니다.</li>"}</ul>
+    </section>
+    <section class="result-section">
+      <h3>출처별 원문 정리</h3>
+      <div class="material-list">${sourceDossiers || `<div class="empty-state">출처별 원문 정리가 없습니다.</div>`}</div>
+    </section>
+    <section class="result-section">
+      <h3>References</h3>
+      <ul class="source-list">${references || "<li>레퍼런스가 없습니다.</li>"}</ul>
     </section>
   `;
 }
@@ -365,7 +404,7 @@ function renderRawOnly(result) {
   `;
   els.panels.materials.innerHTML = `<div class="empty-state">구조화된 자료 목록을 만들지 못했습니다.</div>`;
   els.panels.timeline.innerHTML = `<div class="empty-state">구조화된 타임라인을 만들지 못했습니다.</div>`;
-  renderSources(result);
+  renderSources(null, result);
   renderRaw(result);
 }
 
@@ -401,7 +440,25 @@ function toMarkdown(result) {
       ""
     ]),
     "## 빈틈",
-    ...(data.gaps || []).map((gap) => `- ${gap}`)
+    ...(data.gaps || []).map((gap) => `- ${gap}`),
+    "",
+    "## 출처별 원문 정리",
+    ...(data.sourceDossiers || []).flatMap((source) => [
+      `### ${source.referenceId} ${source.title}`,
+      `- 유형: ${source.sourceType}`,
+      `- 저자/기관: ${source.authors}`,
+      `- 발행처: ${source.publisher}`,
+      `- 날짜: ${source.publishedAt}`,
+      `- URL: ${source.url}`,
+      `- 원문 발췌: ${source.originalExcerpt}`,
+      `- 출처별 정리: ${source.sourceSummary}`,
+      `- 근거: ${(source.evidenceNotes || []).join("; ")}`,
+      `- 활용 지점: ${(source.usedFor || []).join("; ")}`,
+      `- 접근/제한: ${source.accessNote}`,
+      ""
+    ]),
+    "## References",
+    ...(data.references || []).map((reference) => `- ${reference.referenceId} ${reference.citation} ${reference.url}`)
   ];
 
   return lines.join("\n");
