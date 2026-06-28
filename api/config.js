@@ -5,6 +5,7 @@ const {
   DEFAULT_MODEL,
   MATERIAL_TYPES,
   OPENAI_API_TYPES,
+  RESPONSE_MODEL_OPTIONS,
   json
 } = require("../lib/research");
 
@@ -22,6 +23,7 @@ module.exports = async function handler(req, res) {
     defaultModel: DEFAULT_MODEL,
     defaultApiType,
     openAiApiTypes: OPENAI_API_TYPES,
+    modelOptions: RESPONSE_MODEL_OPTIONS,
     materialTypes: MATERIAL_TYPES,
     defaultPort: null
   });

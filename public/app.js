@@ -17,6 +17,7 @@ const els = {
   apiType: document.querySelector("#apiType"),
   apiTypeHint: document.querySelector("#apiTypeHint"),
   model: document.querySelector("#model"),
+  modelHint: document.querySelector("#modelHint"),
   materialTypes: document.querySelector("#materialTypes"),
   recency: document.querySelector("#recency"),
   externalWebAccess: document.querySelector("#externalWebAccess"),
@@ -103,6 +104,35 @@ function getSelectedApiType() {
   return apiTypes.find((type) => type.id === els.apiType.value) || apiTypes[0] || null;
 }
 
+function getModelOptionsForApi(apiType) {
+  return apiType?.modelOptions?.length ? apiType.modelOptions : state.config?.modelOptions || [];
+}
+
+function syncModelHint() {
+  const apiType = getSelectedApiType();
+  const modelOptions = getModelOptionsForApi(apiType);
+  const selected = modelOptions.find((option) => option.id === els.model.value);
+  els.modelHint.textContent = selected?.description || "";
+}
+
+function renderModelOptions(resetModel = false) {
+  const apiType = getSelectedApiType();
+  const modelOptions = getModelOptionsForApi(apiType);
+  const currentModel = els.model.value;
+
+  els.model.innerHTML = modelOptions
+    .map((option) => `<option value="${escapeHtml(option.id)}">${escapeHtml(option.label)}</option>`)
+    .join("");
+
+  const currentModelAllowed = modelOptions.some((option) => option.id === currentModel);
+  if (resetModel || !currentModelAllowed) {
+    els.model.value = apiType?.defaultModel || state.config?.defaultModel || modelOptions[0]?.id || "";
+  } else {
+    els.model.value = currentModel;
+  }
+  syncModelHint();
+}
+
 function setControlDisabled(control, disabled) {
   if (!control) return;
   control.disabled = disabled;
@@ -114,9 +144,7 @@ function syncApiTypeControls(resetModel = false) {
   if (!apiType) return;
 
   const isResponsesApi = apiType.id === "responses_web_search";
-  if (resetModel || !els.model.value.trim()) {
-    els.model.value = apiType.defaultModel || state.config.defaultModel || "gpt-5.5";
-  }
+  renderModelOptions(resetModel);
 
   els.apiTypeHint.textContent = apiType.description || "";
   setControlDisabled(els.externalWebAccess, !isResponsesApi);
@@ -384,6 +412,7 @@ function renderSummary(data, result) {
           <p>${escapeHtml(data.executiveSummary)}</p>
           <div class="meta-line">
             ${result.request?.apiTypeLabel ? `<span class="tag amber">${escapeHtml(result.request.apiTypeLabel)}</span>` : ""}
+            ${result.request?.modelLabel || result.request?.model ? `<span class="tag">${escapeHtml(result.request.modelLabel || result.request.model)}</span>` : ""}
             ${(result.request?.selectedMaterialTypes || []).map((label) => `<span class="tag teal">${escapeHtml(label)}</span>`).join("")}
           </div>
         </section>
@@ -544,6 +573,7 @@ function toMarkdown(result) {
     `# ${data.meta.keyword}`,
     "",
     `API: ${result.request?.apiTypeLabel || result.request?.apiType || "unknown"}`,
+    `Model: ${result.request?.modelLabel || result.request?.model || "unknown"}`,
     "",
     `생성: ${data.meta.generatedAt}`,
     "",
@@ -635,6 +665,7 @@ function bindEvents() {
   });
   els.rememberApiKey.addEventListener("change", persistApiKeyPreference);
   els.apiType.addEventListener("change", () => syncApiTypeControls(true));
+  els.model.addEventListener("change", syncModelHint);
   els.resetButton.addEventListener("click", resetForm);
   els.copyMarkdown.addEventListener("click", copyMarkdown);
   els.downloadJson.addEventListener("click", downloadJson);
