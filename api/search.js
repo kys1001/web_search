@@ -21,8 +21,8 @@ module.exports = async function handler(req, res) {
 
   try {
     const body = await getBody(req);
-    const { payload, requestInfo } = buildOpenAiPayload(body);
-    const response = await callOpenAi(payload, body.apiKey);
+    const { endpointPath, payload, requestInfo } = buildOpenAiPayload(body);
+    const response = await callOpenAi(payload, body.apiKey, endpointPath);
     return json(res, 200, normalizeOpenAiResponse(response, requestInfo));
   } catch (error) {
     return json(res, error.statusCode || 500, {

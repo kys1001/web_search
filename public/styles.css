@@ -158,6 +158,13 @@ legend {
   font-weight: 800;
 }
 
+.field-hint {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
 fieldset {
   margin: 0;
   padding: 0;
@@ -174,6 +181,13 @@ textarea {
   color: var(--ink);
   padding: 10px 11px;
   outline: none;
+}
+
+input:disabled,
+select:disabled,
+textarea:disabled {
+  background: #f5f7f4;
+  color: var(--muted);
 }
 
 textarea {
@@ -227,6 +241,11 @@ textarea:focus {
   color: var(--ink);
   font-size: 13px;
   font-weight: 700;
+}
+
+.field-block.is-disabled,
+.check-row.is-disabled {
+  opacity: 0.7;
 }
 
 .check-row small {

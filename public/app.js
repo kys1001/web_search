@@ -14,6 +14,8 @@ const els = {
   keyword: document.querySelector("#keyword"),
   apiKey: document.querySelector("#apiKey"),
   rememberApiKey: document.querySelector("#rememberApiKey"),
+  apiType: document.querySelector("#apiType"),
+  apiTypeHint: document.querySelector("#apiTypeHint"),
   model: document.querySelector("#model"),
   materialTypes: document.querySelector("#materialTypes"),
   recency: document.querySelector("#recency"),
@@ -89,6 +91,50 @@ function renderMaterialTypes() {
     .join("");
 }
 
+function renderApiTypes() {
+  const apiTypes = state.config.openAiApiTypes || [];
+  els.apiType.innerHTML = apiTypes
+    .map((type) => `<option value="${escapeHtml(type.id)}">${escapeHtml(type.label)}</option>`)
+    .join("");
+}
+
+function getSelectedApiType() {
+  const apiTypes = state.config?.openAiApiTypes || [];
+  return apiTypes.find((type) => type.id === els.apiType.value) || apiTypes[0] || null;
+}
+
+function setControlDisabled(control, disabled) {
+  if (!control) return;
+  control.disabled = disabled;
+  control.closest("label")?.classList.toggle("is-disabled", disabled);
+}
+
+function syncApiTypeControls(resetModel = false) {
+  const apiType = getSelectedApiType();
+  if (!apiType) return;
+
+  const isResponsesApi = apiType.id === "responses_web_search";
+  if (resetModel || !els.model.value.trim()) {
+    els.model.value = apiType.defaultModel || state.config.defaultModel || "gpt-5.5";
+  }
+
+  els.apiTypeHint.textContent = apiType.description || "";
+  setControlDisabled(els.externalWebAccess, !isResponsesApi);
+  setControlDisabled(els.includeImages, !isResponsesApi);
+  setControlDisabled(els.returnUnlimited, !isResponsesApi);
+  setControlDisabled(els.contextSize, !isResponsesApi);
+  setControlDisabled(els.reasoningEffort, !isResponsesApi);
+  setControlDisabled(els.maxImageResults, !isResponsesApi);
+  setControlDisabled(els.allowedDomains, !isResponsesApi);
+  setControlDisabled(els.blockedDomains, !isResponsesApi);
+
+  if (!isResponsesApi) {
+    els.externalWebAccess.checked = true;
+    els.includeImages.checked = false;
+    els.returnUnlimited.checked = false;
+  }
+}
+
 function hasUiApiKey() {
   return Boolean(els.apiKey.value.trim());
 }
@@ -118,7 +164,9 @@ function persistApiKeyPreference() {
 async function loadConfig() {
   const response = await fetch("/api/config");
   state.config = await response.json();
-  els.model.value = state.config.defaultModel || "gpt-5.5";
+  renderApiTypes();
+  els.apiType.value = state.config.defaultApiType || "responses_web_search";
+  syncApiTypeControls(true);
   const savedApiKey = sessionStorage.getItem(API_KEY_STORAGE_KEY);
   if (savedApiKey) {
     els.apiKey.value = savedApiKey;
@@ -126,6 +174,7 @@ async function loadConfig() {
   }
   updateApiStatus();
   renderMaterialTypes();
+  syncApiTypeControls();
 }
 
 function selectedMaterialTypes() {
@@ -136,6 +185,7 @@ function buildRequestBody() {
   return {
     keyword: els.keyword.value,
     apiKey: els.apiKey.value.trim(),
+    apiType: els.apiType.value,
     model: els.model.value,
     materialTypes: selectedMaterialTypes(),
     recency: els.recency.value,
@@ -333,6 +383,7 @@ function renderSummary(data, result) {
           <h3>핵심 요약</h3>
           <p>${escapeHtml(data.executiveSummary)}</p>
           <div class="meta-line">
+            ${result.request?.apiTypeLabel ? `<span class="tag amber">${escapeHtml(result.request.apiTypeLabel)}</span>` : ""}
             ${(result.request?.selectedMaterialTypes || []).map((label) => `<span class="tag teal">${escapeHtml(label)}</span>`).join("")}
           </div>
         </section>
@@ -492,6 +543,8 @@ function toMarkdown(result) {
   const lines = [
     `# ${data.meta.keyword}`,
     "",
+    `API: ${result.request?.apiTypeLabel || result.request?.apiType || "unknown"}`,
+    "",
     `생성: ${data.meta.generatedAt}`,
     "",
     "## 핵심 요약",
@@ -560,8 +613,9 @@ function resetForm() {
   els.apiKey.value = rememberApiKey ? currentApiKey : "";
   els.rememberApiKey.checked = rememberApiKey;
   if (state.config) {
-    els.model.value = state.config.defaultModel;
+    els.apiType.value = state.config.defaultApiType || "responses_web_search";
     renderMaterialTypes();
+    syncApiTypeControls(true);
   }
   persistApiKeyPreference();
   updateApiStatus();
@@ -580,6 +634,7 @@ function bindEvents() {
     updateApiStatus();
   });
   els.rememberApiKey.addEventListener("change", persistApiKeyPreference);
+  els.apiType.addEventListener("change", () => syncApiTypeControls(true));
   els.resetButton.addEventListener("click", resetForm);
   els.copyMarkdown.addEventListener("click", copyMarkdown);
   els.downloadJson.addEventListener("click", downloadJson);
