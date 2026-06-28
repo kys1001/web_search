@@ -197,6 +197,89 @@ function renderEmpty() {
   });
 }
 
+function normalizedSourceDossiers(data, result) {
+  if (data?.sourceDossiers?.length) return data.sourceDossiers;
+
+  const materialSources = (data?.materials || [])
+    .filter((item) => item.url)
+    .map((item, index) => ({
+      referenceId: `[${index + 1}]`,
+      sourceType: item.type || "source",
+      title: item.title || item.url,
+      authors: "unknown",
+      publisher: item.publisher || "unknown",
+      publishedAt: item.publishedAt || "unknown",
+      url: item.url,
+      originalExcerpt: "검색 결과에서 직접 인용 가능한 짧은 원문 발췌가 없습니다.",
+      sourceSummary: item.summary || "",
+      evidenceNotes: item.keyPoints || [],
+      usedFor: [item.whyUseful || "자료 근거"],
+      accessNote: "웹서치 결과와 URL citation 기준으로 정리했습니다."
+    }));
+
+  if (materialSources.length) return materialSources;
+
+  return (result?.citations || []).map((source, index) => ({
+    referenceId: `[${index + 1}]`,
+    sourceType: source.source || "citation",
+    title: source.title || source.url,
+    authors: "unknown",
+    publisher: "unknown",
+    publishedAt: "unknown",
+    url: source.url,
+    originalExcerpt: "검색 결과에서 직접 인용 가능한 짧은 원문 발췌가 없습니다.",
+    sourceSummary: "모델 응답에 구조화된 원문 정리가 없어 URL citation 기준으로 보강했습니다.",
+    evidenceNotes: ["URL citation으로 확인된 출처입니다."],
+    usedFor: ["출처 확인"],
+    accessNote: "URL citation 기준으로 표시했습니다."
+  }));
+}
+
+function normalizedReferences(data, result, dossiers) {
+  if (data?.references?.length) return data.references;
+
+  return (dossiers?.length ? dossiers : normalizedSourceDossiers(data, result)).map((source, index) => ({
+    referenceId: source.referenceId || `[${index + 1}]`,
+    citation: `${source.authors || "Unknown"}. ${source.publishedAt || "unknown"}. ${source.title || "Untitled"}. ${source.publisher || "unknown"}.`,
+    url: source.url || ""
+  }));
+}
+
+function renderSourceDossierCards(dossiers) {
+  return (dossiers || [])
+    .map((source) => `
+      <article class="material-item">
+        <h3>${escapeHtml(source.referenceId)} ${linkHtml(source.url, source.title)}</h3>
+        <div class="meta-line">
+          <span class="tag">${escapeHtml(source.sourceType)}</span>
+          <span>${escapeHtml(source.authors || "authors unknown")}</span>
+          <span>${escapeHtml(source.publisher)}</span>
+          <span>${escapeHtml(source.publishedAt)}</span>
+        </div>
+        <p><strong>원문 발췌:</strong> ${escapeHtml(source.originalExcerpt || "검색 결과에서 직접 인용 가능한 짧은 원문 발췌가 없습니다.")}</p>
+        <p><strong>출처별 정리:</strong> ${escapeHtml(source.sourceSummary)}</p>
+        <ul class="bullet-list">
+          ${(source.evidenceNotes || []).map((note) => `<li>${escapeHtml(note)}</li>`).join("")}
+        </ul>
+        <p><strong>활용 지점:</strong> ${(source.usedFor || []).map((item) => escapeHtml(item)).join(", ") || "표시 없음"}</p>
+        <p><strong>접근/제한:</strong> ${escapeHtml(source.accessNote)}</p>
+      </article>
+    `)
+    .join("");
+}
+
+function renderReferenceItems(references) {
+  return (references || [])
+    .map((reference) => `
+      <li>
+        <strong>${escapeHtml(reference.referenceId)}</strong>
+        ${escapeHtml(reference.citation)}
+        <div class="source-meta">${linkHtml(reference.url, reference.url)}</div>
+      </li>
+    `)
+    .join("");
+}
+
 function renderResult() {
   const result = state.result;
   const data = result.structured;
@@ -218,6 +301,10 @@ function renderResult() {
 }
 
 function renderSummary(data, result) {
+  const dossiers = normalizedSourceDossiers(data, result);
+  const references = normalizedReferences(data, result, dossiers);
+  const sourceDossierCards = renderSourceDossierCards(dossiers);
+  const referenceItems = renderReferenceItems(references);
   const findings = (data.keyFindings || [])
     .map((item) => `
       <li>
@@ -270,6 +357,14 @@ function renderSummary(data, result) {
         </section>
       </div>
     </div>
+    <section class="result-section">
+      <h3>마지막: 출처별 원문 정리</h3>
+      <div class="material-list">${sourceDossierCards || `<div class="empty-state">출처별 원문 정리가 없습니다.</div>`}</div>
+    </section>
+    <section class="result-section">
+      <h3>References</h3>
+      <ul class="source-list">${referenceItems || "<li>레퍼런스가 없습니다.</li>"}</ul>
+    </section>
   `;
 }
 
@@ -340,36 +435,10 @@ function renderSources(data, result) {
     `)
     .join("");
 
-  const sourceDossiers = (data?.sourceDossiers || [])
-    .map((source) => `
-      <article class="material-item">
-        <h3>${escapeHtml(source.referenceId)} ${linkHtml(source.url, source.title)}</h3>
-        <div class="meta-line">
-          <span class="tag">${escapeHtml(source.sourceType)}</span>
-          <span>${escapeHtml(source.authors || "authors unknown")}</span>
-          <span>${escapeHtml(source.publisher)}</span>
-          <span>${escapeHtml(source.publishedAt)}</span>
-        </div>
-        <p><strong>원문 발췌:</strong> ${escapeHtml(source.originalExcerpt || "검색 결과에서 직접 인용 가능한 짧은 원문 발췌가 없습니다.")}</p>
-        <p><strong>출처별 정리:</strong> ${escapeHtml(source.sourceSummary)}</p>
-        <ul class="bullet-list">
-          ${(source.evidenceNotes || []).map((note) => `<li>${escapeHtml(note)}</li>`).join("")}
-        </ul>
-        <p><strong>활용 지점:</strong> ${(source.usedFor || []).map((item) => escapeHtml(item)).join(", ") || "표시 없음"}</p>
-        <p><strong>접근/제한:</strong> ${escapeHtml(source.accessNote)}</p>
-      </article>
-    `)
-    .join("");
-
-  const references = (data?.references || [])
-    .map((reference) => `
-      <li>
-        <strong>${escapeHtml(reference.referenceId)}</strong>
-        ${escapeHtml(reference.citation)}
-        <div class="source-meta">${linkHtml(reference.url, reference.url)}</div>
-      </li>
-    `)
-    .join("");
+  const dossiers = normalizedSourceDossiers(data, result);
+  const references = normalizedReferences(data, result, dossiers);
+  const sourceDossiers = renderSourceDossierCards(dossiers);
+  const referenceItems = renderReferenceItems(references);
 
   els.panels.sources.innerHTML = `
     <section class="result-section">
@@ -386,7 +455,7 @@ function renderSources(data, result) {
     </section>
     <section class="result-section">
       <h3>References</h3>
-      <ul class="source-list">${references || "<li>레퍼런스가 없습니다.</li>"}</ul>
+      <ul class="source-list">${referenceItems || "<li>레퍼런스가 없습니다.</li>"}</ul>
     </section>
   `;
 }
@@ -418,6 +487,8 @@ function toMarkdown(result) {
   const data = result.structured;
   if (!data) return result.outputText || "";
 
+  const dossiers = normalizedSourceDossiers(data, result);
+  const references = normalizedReferences(data, result, dossiers);
   const lines = [
     `# ${data.meta.keyword}`,
     "",
@@ -443,7 +514,7 @@ function toMarkdown(result) {
     ...(data.gaps || []).map((gap) => `- ${gap}`),
     "",
     "## 출처별 원문 정리",
-    ...(data.sourceDossiers || []).flatMap((source) => [
+    ...dossiers.flatMap((source) => [
       `### ${source.referenceId} ${source.title}`,
       `- 유형: ${source.sourceType}`,
       `- 저자/기관: ${source.authors}`,
@@ -458,7 +529,7 @@ function toMarkdown(result) {
       ""
     ]),
     "## References",
-    ...(data.references || []).map((reference) => `- ${reference.referenceId} ${reference.citation} ${reference.url}`)
+    ...references.map((reference) => `- ${reference.referenceId} ${reference.citation} ${reference.url}`)
   ];
 
   return lines.join("\n");
